@@ -214,13 +214,22 @@ export async function sendVerificationEmail({
 
       if (result.error) {
         console.error('[Resend Error]', result.error)
-        // Fall back to next method if any
+        return {
+          success: false,
+          method: 'resend',
+          error: result.error.message || 'Resend email delivery failed',
+        }
       } else {
         console.log(`[Email Sent via Resend] To: ${to}, ID: ${result.data?.id}`)
         return { success: true, method: 'resend' }
       }
     } catch (err: any) {
       console.error('[Resend Exception]', err?.message || err)
+      return {
+        success: false,
+        method: 'resend',
+        error: err?.message || 'Failed connecting to Resend API',
+      }
     }
   }
 
@@ -252,6 +261,11 @@ export async function sendVerificationEmail({
       return { success: true, method: 'smtp' }
     } catch (err: any) {
       console.error('[SMTP Error]', err?.message || err)
+      return {
+        success: false,
+        method: 'smtp',
+        error: err?.message || 'SMTP delivery failed',
+      }
     }
   }
 

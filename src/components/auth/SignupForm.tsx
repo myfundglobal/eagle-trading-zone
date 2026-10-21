@@ -47,6 +47,7 @@ export function SignupForm() {
   const [otpCode, setOtpCode] = useState(['', '', '', '', '', ''])
   const [otpError, setOtpError] = useState<string | null>(null)
   const [resendCooldown, setResendCooldown] = useState(60)
+  const [devCodeNotice, setDevCodeNotice] = useState<string | null>(null)
 
   // Resend cooldown timer countdown
   useEffect(() => {
@@ -110,9 +111,19 @@ export function SignupForm() {
         return
       }
 
+      if (data.devCode) {
+        setDevCodeNotice(data.devCode)
+      } else {
+        setDevCodeNotice(null)
+      }
+
       setStep('otp')
       setResendCooldown(60)
-      toast.success(`Verification code sent to ${form.email}! Please check your inbox.`)
+      toast.success(
+        data.devCode
+          ? `Code generated for ${form.email}. See note below.`
+          : `Verification code sent to ${form.email}! Please check your inbox.`
+      )
     } catch (err) {
       toast.error('Failed to send verification code. Please check your connection.')
     } finally {
@@ -134,7 +145,16 @@ export function SignupForm() {
       const data = await res.json()
 
       if (res.ok) {
-        toast.success(`New verification code sent to ${form.email}!`)
+        if (data.devCode) {
+          setDevCodeNotice(data.devCode)
+        } else {
+          setDevCodeNotice(null)
+        }
+        toast.success(
+          data.devCode
+            ? `New code generated for ${form.email}`
+            : `New verification code sent to ${form.email}!`
+        )
         setResendCooldown(60)
         setOtpCode(['', '', '', '', '', ''])
         setOtpError(null)
@@ -422,6 +442,17 @@ export function SignupForm() {
                 </div>
                 {otpError && (
                   <p className="text-xs text-red-400 text-center mt-1">{otpError}</p>
+                )}
+
+                {devCodeNotice && (
+                  <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-center space-y-1">
+                    <p className="text-[11px] text-amber-300 font-medium leading-relaxed">
+                      💡 <strong>Vercel Setup Notice:</strong> <code>RESEND_API_KEY</code> abhi Vercel mein add nahi hua hai. Real email inbox mein aane ke liye Vercel Settings mein key add karke Redeploy karein.
+                    </p>
+                    <p className="text-xs text-white font-mono font-bold">
+                      Testing Code: <span className="underline text-amber-400">{devCodeNotice}</span>
+                    </p>
+                  </div>
                 )}
               </div>
 

@@ -30,12 +30,22 @@ export async function POST(req: Request) {
       code: otpCode,
     })
 
+    if (!emailResult.success) {
+      return NextResponse.json(
+        {
+          error: emailResult.error || 'Failed to send verification email.',
+          method: emailResult.method,
+        },
+        { status: 400 }
+      )
+    }
+
     return NextResponse.json({
       success: true,
       message: `Verification code sent to ${email}`,
       method: emailResult.method,
-      // In dev mode, return the code so testing isn't blocked if SMTP is pending setup
-      ...(emailResult.method === 'dev_mock' ? { debugCode: otpCode } : {}),
+      // In dev mode (before user adds RESEND_API_KEY in Vercel), provide the generated code
+      ...(emailResult.method === 'dev_mock' ? { devCode: otpCode } : {}),
     })
   } catch (err: any) {
     console.error('Send OTP Error:', err)
