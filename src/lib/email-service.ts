@@ -198,7 +198,46 @@ export async function sendVerificationEmail({
   const subject = `🦅 [${code}] Your Eagle Trading Zone Verification Code`
   const senderEmail = process.env.EMAIL_FROM || process.env.SMTP_FROM || 'Eagle Trading Zone <noreply@eagletradingzone.com>'
 
-  // 1. Try Resend API if API Key is configured
+  // 1. Try SMTP (Gmail App Password) first if credentials exist
+  const smtpUser = process.env.SMTP_USER?.trim()
+  const smtpPass = process.env.SMTP_PASS?.replace(/\s+/g, '')?.trim()
+
+  if (smtpUser && smtpPass) {
+    try {
+      const host = process.env.SMTP_HOST || 'smtp.gmail.com'
+      const port = Number(process.env.SMTP_PORT) || 465
+      const secure = port === 465
+
+      const transporter = nodemailer.createTransport({
+        host,
+        port,
+        secure,
+        auth: {
+          user: smtpUser,
+          pass: smtpPass,
+        },
+      })
+
+      await transporter.sendMail({
+        from: process.env.SMTP_FROM || `"Eagle Trading Zone" <${smtpUser}>`,
+        to,
+        subject,
+        html,
+      })
+
+      console.log(`[Email Sent via Gmail SMTP] To: ${to}`)
+      return { success: true, method: 'smtp' }
+    } catch (err: any) {
+      console.error('[SMTP Error]', err?.message || err)
+      return {
+        success: false,
+        method: 'smtp',
+        error: `Gmail SMTP Error: ${err?.message || 'Delivery failed. Check your 16-character App Password.'}`,
+      }
+    }
+  }
+
+  // 2. Try Resend API if configured
   const resendKey = process.env.RESEND_API_KEY?.trim()
   if (resendKey) {
     if (resendKey.includes('...') || resendKey.length < 20) {
@@ -242,42 +281,6 @@ export async function sendVerificationEmail({
         success: false,
         method: 'resend',
         error: err?.message || 'Failed connecting to Resend API',
-      }
-    }
-  }
-
-  // 2. Try SMTP (Gmail App Password, Brevo, AWS SES, or any SMTP)
-  if (process.env.SMTP_USER && process.env.SMTP_PASS) {
-    try {
-      const host = process.env.SMTP_HOST || 'smtp.gmail.com'
-      const port = Number(process.env.SMTP_PORT) || 465
-      const secure = port === 465
-
-      const transporter = nodemailer.createTransport({
-        host,
-        port,
-        secure,
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS,
-        },
-      })
-
-      await transporter.sendMail({
-        from: process.env.SMTP_FROM || `"Eagle Trading Zone" <${process.env.SMTP_USER}>`,
-        to,
-        subject,
-        html,
-      })
-
-      console.log(`[Email Sent via SMTP] To: ${to}`)
-      return { success: true, method: 'smtp' }
-    } catch (err: any) {
-      console.error('[SMTP Error]', err?.message || err)
-      return {
-        success: false,
-        method: 'smtp',
-        error: err?.message || 'SMTP delivery failed',
       }
     }
   }
