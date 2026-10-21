@@ -198,13 +198,18 @@ export async function sendVerificationEmail({
   const subject = `🦅 [${code}] Your Eagle Trading Zone Verification Code`
   const senderEmail = process.env.EMAIL_FROM || process.env.SMTP_FROM || 'Eagle Trading Zone <noreply@eagletradingzone.com>'
 
-  // 1. Try SMTP (Gmail App Password) first if credentials exist
+  // 1. Try SMTP (Zoho Mail / Gmail / Custom SMTP) if credentials exist
   const smtpUser = process.env.SMTP_USER?.trim()
   const smtpPass = process.env.SMTP_PASS?.replace(/\s+/g, '')?.trim()
 
   if (smtpUser && smtpPass) {
     try {
-      const host = process.env.SMTP_HOST || 'smtp.gmail.com'
+      // Auto-detect Zoho vs Gmail if SMTP_HOST is not explicitly specified
+      let defaultHost = 'smtp.gmail.com'
+      if (smtpUser.toLowerCase().includes('zoho.in')) defaultHost = 'smtp.zoho.in'
+      else if (smtpUser.toLowerCase().includes('zoho')) defaultHost = 'smtp.zoho.com'
+
+      const host = process.env.SMTP_HOST?.trim() || defaultHost
       const port = Number(process.env.SMTP_PORT) || 465
       const secure = port === 465
 
@@ -216,23 +221,28 @@ export async function sendVerificationEmail({
           user: smtpUser,
           pass: smtpPass,
         },
+        tls: {
+          rejectUnauthorized: false,
+        },
       })
 
+      const senderFrom = process.env.SMTP_FROM || `"Eagle Trading Zone" <${smtpUser}>`
+
       await transporter.sendMail({
-        from: process.env.SMTP_FROM || `"Eagle Trading Zone" <${smtpUser}>`,
+        from: senderFrom,
         to,
         subject,
         html,
       })
 
-      console.log(`[Email Sent via Gmail SMTP] To: ${to}`)
+      console.log(`[Email Sent via SMTP (${host})] To: ${to}`)
       return { success: true, method: 'smtp' }
     } catch (err: any) {
       console.error('[SMTP Error]', err?.message || err)
       return {
         success: false,
         method: 'smtp',
-        error: `Gmail SMTP Error: ${err?.message || 'Delivery failed. Check your 16-character App Password.'}`,
+        error: `Email SMTP Error: ${err?.message || 'Delivery failed. Check your email password.'}`,
       }
     }
   }
