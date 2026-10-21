@@ -1,0 +1,13 @@
+{
+  "name": "Eagle Trading Zone FX Book",
+  "short_name": "ETZ FX Book",
+  "description": "Professional Forex Trading Journal & Analytics Platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0c",
+  "theme_color": "#E5261A",
+  "icons": [
+    { "src": "/logo.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/logo.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

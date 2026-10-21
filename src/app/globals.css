@@ -1,0 +1,118 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 9 100% 50%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 9 100% 50%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 240 6% 5%;
+    --foreground: 210 20% 94%;
+    --card: 240 6% 7%;
+    --card-foreground: 210 20% 94%;
+    --popover: 240 6% 7%;
+    --popover-foreground: 210 20% 94%;
+    --primary: 9 100% 50%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 6% 13%;
+    --secondary-foreground: 210 20% 94%;
+    --muted: 240 6% 13%;
+    --muted-foreground: 240 5% 55%;
+    --accent: 240 6% 13%;
+    --accent-foreground: 210 20% 94%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 6% 16%;
+    --input: 240 6% 16%;
+    --ring: 9 100% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-void-950 text-foreground;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+  }
+  
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #111114;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #E5261A;
+  }
+}
+
+@layer utilities {
+  /* Glassmorphism */
+  .glass {
+    @apply bg-white/5 backdrop-blur-md border border-white/10;
+  }
+  .glass-dark {
+    @apply bg-black/30 backdrop-blur-md border border-white/5;
+  }
+  
+  /* Ember glow utilities */
+  .glow-ember {
+    box-shadow: 0 0 20px rgba(229,38,26,0.4), 0 0 40px rgba(255,106,0,0.2);
+  }
+  .glow-ember-lg {
+    box-shadow: 0 0 40px rgba(229,38,26,0.6), 0 0 80px rgba(255,106,0,0.3);
+  }
+  
+  /* Animated gradient border */
+  .gradient-border {
+    position: relative;
+    background: linear-gradient(#111114, #111114) padding-box,
+                linear-gradient(135deg, #E5261A, #FF6A00, #FFB020) border-box;
+    border: 1px solid transparent;
+  }
+
+  /* Text gradient */
+  .text-gradient {
+    background: linear-gradient(135deg, #E5261A, #FF6A00, #FFB020);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
