@@ -199,17 +199,32 @@ export async function sendVerificationEmail({
   const senderEmail = process.env.EMAIL_FROM || process.env.SMTP_FROM || 'Eagle Trading Zone <noreply@eagletradingzone.com>'
 
   // 1. Try SMTP (Zoho Mail / Gmail / Custom SMTP) if credentials exist
-  const smtpUser = process.env.SMTP_USER?.trim()
+  let smtpUser = process.env.SMTP_USER?.trim()
+  let smtpHost = process.env.SMTP_HOST?.trim()
   const smtpPass = process.env.SMTP_PASS?.replace(/\s+/g, '')?.trim()
 
   if (smtpUser && smtpPass) {
     try {
-      // Auto-detect Zoho vs Gmail if SMTP_HOST is not explicitly specified
-      let defaultHost = 'smtp.gmail.com'
-      if (smtpUser.toLowerCase().includes('zoho.in')) defaultHost = 'smtp.zoho.in'
-      else if (smtpUser.toLowerCase().includes('zoho')) defaultHost = 'smtp.zoho.com'
+      // Auto-correct if user accidentally swapped SMTP_HOST and SMTP_USER,
+      // or accidentally put their email in SMTP_HOST (e.g. eagletradingzone@zohomail.in)
+      if (smtpHost && smtpHost.includes('@') && (!smtpUser.includes('@') || smtpUser.toLowerCase().includes('smtp'))) {
+        const temp = smtpHost
+        smtpHost = smtpUser
+        smtpUser = temp
+      }
 
-      const host = process.env.SMTP_HOST?.trim() || defaultHost
+      // If smtpHost is an email or empty, auto-resolve correct mail server
+      if (!smtpHost || smtpHost.includes('@') || smtpHost.length < 4) {
+        if (smtpUser.toLowerCase().includes('zoho.in')) {
+          smtpHost = 'smtp.zoho.in'
+        } else if (smtpUser.toLowerCase().includes('zoho')) {
+          smtpHost = 'smtp.zoho.com'
+        } else {
+          smtpHost = 'smtp.gmail.com'
+        }
+      }
+
+      const host = smtpHost
       const port = Number(process.env.SMTP_PORT) || 465
       const secure = port === 465
 
