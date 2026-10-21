@@ -199,9 +199,18 @@ export async function sendVerificationEmail({
   const senderEmail = process.env.EMAIL_FROM || process.env.SMTP_FROM || 'Eagle Trading Zone <noreply@eagletradingzone.com>'
 
   // 1. Try Resend API if API Key is configured
-  if (process.env.RESEND_API_KEY) {
+  const resendKey = process.env.RESEND_API_KEY?.trim()
+  if (resendKey) {
+    if (resendKey.includes('...') || resendKey.length < 20) {
+      return {
+        success: false,
+        method: 'resend',
+        error: 'Incomplete API Key: Aapne table se aadhi key copy kar li hai (jisme "..." hain). Resend par nayi key banakar popup se poori key copy karein.',
+      }
+    }
+
     try {
-      const resend = new Resend(process.env.RESEND_API_KEY)
+      const resend = new Resend(resendKey)
       // If user hasn't verified a custom domain on Resend, Resend requires onboarding@resend.dev
       const fromAddress = process.env.RESEND_FROM || 'Eagle Trading Zone <onboarding@resend.dev>'
 
@@ -214,10 +223,14 @@ export async function sendVerificationEmail({
 
       if (result.error) {
         console.error('[Resend Error]', result.error)
+        let errorMsg = result.error.message || 'Resend email delivery failed'
+        if (errorMsg.toLowerCase().includes('only send testing emails')) {
+          errorMsg = `Resend free test mode mein sirf aapke Resend account email par mail ja sakti hai. Kisi bhi user ko bhejne ke liye Gmail SMTP use karein.`
+        }
         return {
           success: false,
           method: 'resend',
-          error: result.error.message || 'Resend email delivery failed',
+          error: errorMsg,
         }
       } else {
         console.log(`[Email Sent via Resend] To: ${to}, ID: ${result.data?.id}`)
