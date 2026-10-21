@@ -204,32 +204,7 @@ export function LoginForm() {
           </form>
         )}
 
-        {/* Quick Demo Access for Testing & Non-Coders */}
-        <div className="mt-6 pt-5 border-t border-white/10 space-y-2.5">
-          <div className="text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center justify-center gap-2">
-            <span>⚡ Instant Demo Access (One-Click)</span>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => loginAsDemo('user', 'pro')}
-              className="text-xs border-white/10 hover:border-ember-500/50 hover:bg-ember-500/10 text-gray-300"
-            >
-              Demo Trader (User)
-            </Button>
-            <Button
-              type="button"
-              variant="default"
-              size="sm"
-              onClick={() => loginAsDemo('admin', 'elite')}
-              className="text-xs font-bold bg-ember-gradient hover:opacity-95 text-white"
-            >
-              Eagle Admin 👑
-            </Button>
-          </div>
-        </div>
+
 
         <p className="text-center text-xs text-gray-500 mt-4">
           Don&apos;t have an account?{' '}
