@@ -10,6 +10,7 @@ import toast from 'react-hot-toast'
 interface AuthContextType {
   user: UserProfile | null
   loading: boolean
+  loginUser: (userData: Partial<UserProfile> & { email: string }, showToast?: boolean) => void
   loginAsDemo: (role?: 'user' | 'admin', plan?: 'free' | 'pro' | 'elite') => void
   logout: () => Promise<void>
   updatePlan: (newPlan: 'free' | 'pro' | 'elite', period?: 'monthly' | 'yearly') => void
@@ -43,6 +44,7 @@ const DEFAULT_DEMO_USER: UserProfile = {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
+  loginUser: () => {},
   loginAsDemo: () => {},
   logout: async () => {},
   updatePlan: () => {},
@@ -178,6 +180,59 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
+  const loginUser = (
+    userData: Partial<UserProfile> & { email: string },
+    showToast = true
+  ) => {
+    const existing = typeof window !== 'undefined' ? localStorage.getItem('eagle_users') : null
+    let usersList: any[] = []
+    try {
+      if (existing) usersList = JSON.parse(existing)
+    } catch {}
+
+    const found = usersList.find((u: any) => u.email?.toLowerCase() === userData.email?.toLowerCase())
+    const role = userData.role || found?.role || (userData.email.toLowerCase().includes('admin') ? 'admin' : 'user')
+    const fullName = userData.name || userData.full_name || found?.full_name || found?.name || userData.email.split('@')[0]
+
+    const fullUser: UserProfile = {
+      ...DEFAULT_DEMO_USER,
+      ...found,
+      ...userData,
+      id: userData.id || found?.id || `user-${Date.now()}`,
+      email: userData.email,
+      full_name: fullName,
+      name: fullName,
+      phone_number: userData.phone_number || found?.phone_number || '+91 9876543210',
+      role,
+      verification_status: 'Verified',
+      plan: userData.plan || found?.plan || (role === 'admin' ? 'elite' : 'pro'),
+      plan_start: found?.plan_start || new Date().toISOString(),
+      plan_expiry: found?.plan_expiry || new Date(Date.now() + 30 * 86400000).toISOString(),
+    }
+
+    setUser(fullUser)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('eagle_demo_user', JSON.stringify(fullUser))
+      const idx = usersList.findIndex((u: any) => u.email?.toLowerCase() === fullUser.email.toLowerCase())
+      if (idx >= 0) {
+        usersList[idx] = { ...usersList[idx], ...fullUser }
+      } else {
+        usersList.push(fullUser)
+      }
+      localStorage.setItem('eagle_users', JSON.stringify(usersList))
+    }
+
+    if (showToast) {
+      toast.success(`Welcome back, ${fullName}!`)
+    }
+
+    if (role === 'admin') {
+      router.push('/dashboard/community')
+    } else {
+      router.push('/dashboard')
+    }
+  }
+
   const loginAsDemo = (role: 'user' | 'admin' = 'user', plan: 'free' | 'pro' | 'elite' = 'free') => {
     const demoUser: UserProfile = {
       ...DEFAULT_DEMO_USER,
@@ -196,7 +251,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (typeof window !== 'undefined') {
       localStorage.setItem('eagle_demo_user', JSON.stringify(demoUser))
     }
-    toast.success(`Signed in as ${role === 'admin' ? 'Admin 👑' : `${plan.toUpperCase()} Trader`}`)
+    toast.success(role === 'admin' ? 'Signed in as Eagle Admin 👑' : 'Signed in successfully')
     if (role === 'admin') {
       router.push('/dashboard/community')
     } else {
@@ -311,6 +366,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         user,
         loading,
+        loginUser,
         loginAsDemo,
         logout,
         updatePlan,

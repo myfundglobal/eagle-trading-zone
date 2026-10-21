@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -27,7 +27,7 @@ import { validateSignupEmail } from '@/lib/email-validator'
 import toast from 'react-hot-toast'
 
 export function SignupForm() {
-  const { loginAsDemo, verifyOTP } = useAuth()
+  const { loginUser } = useAuth()
   const router = useRouter()
 
   // Form fields
@@ -46,7 +46,18 @@ export function SignupForm() {
   const [step, setStep] = useState<'form' | 'otp'>('form')
   const [otpCode, setOtpCode] = useState(['', '', '', '', '', ''])
   const [otpError, setOtpError] = useState<string | null>(null)
-  const [resendCooldown, setResendCooldown] = useState(45)
+  const [resendCooldown, setResendCooldown] = useState(60)
+
+  // Resend cooldown timer countdown
+  useEffect(() => {
+    let timer: NodeJS.Timeout
+    if (step === 'otp' && resendCooldown > 0) {
+      timer = setInterval(() => {
+        setResendCooldown(prev => (prev > 0 ? prev - 1 : 0))
+      }, 1000)
+    }
+    return () => clearInterval(timer)
+  }, [step, resendCooldown])
 
   // Validate on blur or change
   const handleEmailChange = (val: string) => {
@@ -84,12 +95,57 @@ export function SignupForm() {
 
     setLoading(true)
 
-    // Simulate sending OTP verification code
-    setTimeout(() => {
-      setLoading(false)
+    try {
+      const res = await fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: form.email.trim(), name: form.name.trim() }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        toast.error(data.error || 'Failed to send verification email.')
+        setLoading(false)
+        return
+      }
+
       setStep('otp')
-      toast.success(`Verification OTP sent to ${form.email}!`)
-    }, 700)
+      setResendCooldown(60)
+      toast.success(`Verification code sent to ${form.email}! Please check your inbox.`)
+    } catch (err) {
+      toast.error('Failed to send verification code. Please check your connection.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleResendCode = async () => {
+    if (resendCooldown > 0 || loading) return
+    setLoading(true)
+
+    try {
+      const res = await fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: form.email.trim(), name: form.name.trim() }),
+      })
+
+      const data = await res.json()
+
+      if (res.ok) {
+        toast.success(`New verification code sent to ${form.email}!`)
+        setResendCooldown(60)
+        setOtpCode(['', '', '', '', '', ''])
+        setOtpError(null)
+      } else {
+        toast.error(data.error || 'Failed to resend code.')
+      }
+    } catch {
+      toast.error('Failed to resend code.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleOtpChange = (index: number, val: string) => {
@@ -107,7 +163,7 @@ export function SignupForm() {
     }
   }
 
-  const handleVerifyOtp = (e: React.FormEvent) => {
+  const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault()
     const fullCode = otpCode.join('')
 
@@ -117,30 +173,44 @@ export function SignupForm() {
     }
 
     setLoading(true)
-    setTimeout(() => {
-      // Save created user in local session
-      const newUser = {
-        id: `user-${Date.now()}`,
-        email: form.email,
-        full_name: form.name,
-        name: form.name,
-        phone_number: form.phone,
-        avatar_url: '/logo.png',
-        role: 'user' as const,
-        verification_status: 'Verified' as const,
-        plan: 'free' as const,
-        plan_start: new Date().toISOString(),
-        plan_expiry: null,
-        is_banned: false,
-        monthly_trade_count: 0,
-        preferred_currency: 'USD',
-        created_at: new Date().toISOString(),
+    setOtpError(null)
+
+    try {
+      const res = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: form.email.trim(), code: fullCode }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setOtpError(data.error || 'Invalid verification code.')
+        toast.error(data.error || 'Invalid verification code.')
+        setLoading(false)
+        return
       }
-      localStorage.setItem('eagle_demo_user', JSON.stringify(newUser))
-      verifyOTP(fullCode)
-      setLoading(false)
+
+      // Successfully verified: log user into application
+      loginUser(
+        {
+          email: form.email.trim(),
+          name: form.name.trim(),
+          full_name: form.name.trim(),
+          phone_number: form.phone.trim(),
+          role: form.email.toLowerCase().includes('admin') ? 'admin' : 'user',
+          plan: 'free',
+        },
+        false
+      )
+
+      toast.success('Email verified successfully! Welcome to Eagle Trading Zone.')
       router.push('/dashboard')
-    }, 600)
+    } catch (err) {
+      toast.error('Network error during verification. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -317,15 +387,15 @@ export function SignupForm() {
               onSubmit={handleVerifyOtp}
               className="space-y-5"
             >
-              <div className="p-3 rounded-xl bg-ember-500/10 border border-ember-500/20 text-center">
-                <KeyRound className="w-6 h-6 text-ember-400 mx-auto mb-1.5" />
+              <div className="p-4 rounded-xl bg-ember-500/10 border border-ember-500/25 text-center">
+                <KeyRound className="w-7 h-7 text-ember-400 mx-auto mb-2 drop-shadow-glow" />
                 <div className="text-xs text-gray-300 font-medium">
                   We sent a 6-digit verification code to:
                 </div>
-                <div className="text-sm font-bold text-white mt-0.5">{form.email}</div>
-                <div className="text-[11px] text-amber-glow/90 font-mono mt-1">
-                  💡 Test Code: <span className="font-bold underline">749201</span> (or any 6 digits)
-                </div>
+                <div className="text-sm font-bold text-white mt-1 tracking-wide">{form.email}</div>
+                <p className="text-[11px] text-gray-400 mt-2 leading-relaxed">
+                  Please check your inbox (and spam/junk folder) for the verification code from <span className="text-ember-400 font-semibold">Eagle Trading Zone</span>.
+                </p>
               </div>
 
               <div className="space-y-2">
@@ -346,7 +416,7 @@ export function SignupForm() {
                           document.getElementById(`otp-${idx - 1}`)?.focus()
                         }
                       }}
-                      className="w-11 h-12 text-center text-lg font-bold font-mono rounded-xl bg-void-900 border border-white/20 focus:border-ember-500 focus:ring-1 focus:ring-ember-500 text-white outline-none"
+                      className="w-11 h-12 text-center text-lg font-bold font-mono rounded-xl bg-void-900 border border-white/20 focus:border-ember-500 focus:ring-1 focus:ring-ember-500 text-white outline-none transition-colors"
                     />
                   ))}
                 </div>
@@ -355,27 +425,21 @@ export function SignupForm() {
                 )}
               </div>
 
-              <div className="flex items-center justify-between text-xs text-gray-400">
+              <div className="flex items-center justify-between text-xs text-gray-400 pt-1">
                 <button
                   type="button"
-                  onClick={() => {
-                    setOtpCode(['7', '4', '9', '2', '0', '1'])
-                    toast.success('Auto-filled test code: 749201')
-                  }}
-                  className="text-ember-400 hover:underline flex items-center gap-1 font-medium"
+                  onClick={() => setStep('form')}
+                  className="text-gray-400 hover:text-white transition-colors"
                 >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  Auto-fill Test OTP
+                  Change Email or Phone
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    toast.success('New verification code sent!')
-                    setResendCooldown(45)
-                  }}
-                  className="text-gray-400 hover:text-white"
+                  disabled={resendCooldown > 0 || loading}
+                  onClick={handleResendCode}
+                  className="text-ember-400 hover:text-ember-300 disabled:text-gray-600 font-semibold transition-colors"
                 >
-                  Resend Code
+                  {resendCooldown > 0 ? `Resend Code (${resendCooldown}s)` : 'Resend Code'}
                 </button>
               </div>
 
@@ -383,19 +447,11 @@ export function SignupForm() {
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="w-full gap-2 bg-gradient-to-r from-ember-600 via-ember-500 to-amber-glow font-bold text-white shadow-lg shadow-ember-500/25"
+                  className="w-full gap-2 bg-gradient-to-r from-ember-600 via-ember-500 to-amber-glow font-bold text-white shadow-lg shadow-ember-500/25 hover:shadow-ember-500/40"
                 >
                   <ShieldCheck className="w-4 h-4" />
                   {loading ? 'Verifying OTP...' : 'Verify OTP & Access Dashboard'}
                   <ArrowRight className="w-4 h-4" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => setStep('form')}
-                  className="w-full text-xs text-gray-400 hover:text-white"
-                >
-                  Change Email or Phone
                 </Button>
               </div>
             </motion.form>

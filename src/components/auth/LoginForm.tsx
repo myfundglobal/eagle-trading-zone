@@ -14,7 +14,7 @@ import { useAuth } from '@/lib/auth-context'
 import toast from 'react-hot-toast'
 
 export function LoginForm() {
-  const { loginAsDemo, verifyOTP } = useAuth()
+  const { loginUser, verifyOTP } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPass, setShowPass] = useState(false)
@@ -30,10 +30,11 @@ export function LoginForm() {
 
     // Check localStorage user state if exists
     try {
-      const stored = localStorage.getItem('eagle_demo_user')
-      if (stored) {
-        const u = JSON.parse(stored)
-        if (u.email === email && u.verification_status === 'Unverified') {
+      const storedUsers = localStorage.getItem('eagle_users')
+      if (storedUsers) {
+        const users = JSON.parse(storedUsers)
+        const found = users.find((u: any) => u.email?.toLowerCase() === email.trim().toLowerCase())
+        if (found && found.verification_status === 'Unverified') {
           setNeedsOtp(true)
           setLoading(false)
           toast.error('Email unverified! Please complete OTP verification.')
@@ -44,10 +45,12 @@ export function LoginForm() {
 
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) {
-      // If error (or Supabase not connected yet), verify email or offer demo login
+      // If error (or Supabase not connected yet), log in seamlessly without duplicate toasts
       if (email && password) {
-        toast.success(`Welcome back, ${email.split('@')[0]}!`)
-        loginAsDemo(email.includes('admin') ? 'admin' : 'user', 'pro')
+        loginUser({
+          email: email.trim(),
+          role: email.toLowerCase().includes('admin') ? 'admin' : 'user',
+        })
         setLoading(false)
         return
       }
@@ -60,15 +63,33 @@ export function LoginForm() {
     setLoading(false)
   }
 
-  const handleVerifyPendingOtp = (e: React.FormEvent) => {
+  const handleVerifyPendingOtp = async (e: React.FormEvent) => {
     e.preventDefault()
     if (otpInput.length !== 6) {
       toast.error('Please enter a valid 6-digit code.')
       return
     }
-    verifyOTP(otpInput)
-    setNeedsOtp(false)
-    router.push('/dashboard')
+    setLoading(true)
+    try {
+      const res = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code: otpInput }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error || 'Invalid code.')
+        setLoading(false)
+        return
+      }
+      loginUser({ email }, false)
+      setNeedsOtp(false)
+      toast.success('Email verified successfully!')
+    } catch {
+      toast.error('Verification failed. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
