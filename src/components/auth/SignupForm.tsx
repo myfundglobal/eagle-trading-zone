@@ -93,7 +93,11 @@ export function SignupForm() {
 
       toast.success('Account created successfully! Welcome to Eagle Trading Zone.')
       setLoading(false)
-      router.push('/dashboard')
+      if (typeof window !== 'undefined') {
+        window.location.href = form.email.toLowerCase().includes('admin')
+          ? '/dashboard/community'
+          : '/dashboard'
+      }
     }, 400)
   }
 
