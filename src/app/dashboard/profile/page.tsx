@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { motion } from 'framer-motion'
 import {
   User,
@@ -18,7 +19,7 @@ import {
   Award,
   KeyRound,
   CheckCircle2,
-  UserCheck,
+  ShieldAlert,
 } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { useTheme } from 'next-themes'
@@ -28,7 +29,7 @@ import { Label } from '@/components/ui/label'
 import toast from 'react-hot-toast'
 
 export default function ProfilePage() {
-  const { user, updateProfile, toggleRole, isAdmin } = useAuth()
+  const { user, updateProfile, isAdmin } = useAuth()
   const { theme, setTheme } = useTheme()
 
   const [fullName, setFullName] = useState(user?.full_name || user?.name || 'Eagle Trader')
@@ -114,7 +115,7 @@ export default function ProfilePage() {
                     : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
                 }`}
               >
-                {isAdmin ? 'Admin 👑' : 'User'}
+                {isAdmin ? 'Administrator 👑' : 'Trader'}
               </span>
             </div>
 
@@ -139,19 +140,22 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Role Toggle Button */}
-          <div className="w-full pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={toggleRole}
-              className="w-full text-xs font-bold border-ember-500/30 text-ember-400 hover:bg-ember-500/10"
-            >
-              <UserCheck className="w-3.5 h-3.5 mr-1.5" />
-              Switch to {isAdmin ? 'User Role' : 'Admin Role 👑'}
-            </Button>
-          </div>
+          {/* Admin Portal Shortcut if genuine Admin */}
+          {isAdmin && (
+            <div className="w-full pt-2">
+              <Link href="/admin" className="w-full block">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full text-xs font-bold border-amber-glow/40 text-amber-glow hover:bg-amber-glow/10"
+                >
+                  <ShieldAlert className="w-3.5 h-3.5 mr-1.5" />
+                  Open Admin Portal 👑
+                </Button>
+              </Link>
+            </div>
+          )}
         </div>
 
         {/* Right Column: Edit Profile Form */}
@@ -161,7 +165,7 @@ export default function ProfilePage() {
               <span>User Information (Data Model: Users)</span>
               <span className="text-[11px] text-emerald-400 font-mono flex items-center gap-1">
                 <ShieldCheck className="w-3.5 h-3.5" />
-                OTP Verified
+                Verified
               </span>
             </div>
 

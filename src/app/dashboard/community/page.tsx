@@ -47,7 +47,7 @@ const SAMPLE_CHART_PRESETS = [
 
 export default function CommunityQAPage() {
   const { posts, addQuestion, replyAsAdmin, deletePost } = useCommunityQAStore()
-  const { user, isAdmin, toggleRole } = useAuth()
+  const { user, isAdmin } = useAuth()
 
   // Modals & States
   const [askModalOpen, setAskModalOpen] = useState(false)
@@ -134,30 +134,13 @@ export default function CommunityQAPage() {
           </p>
         </div>
 
-        {/* Action Controls & Admin Role Toggle */}
+        {/* Action Controls */}
         <div className="flex flex-wrap items-center gap-3">
-          {/* Quick Role Switcher for instant evaluator testing */}
-          <div className="p-1.5 px-3 rounded-xl bg-void-900 border border-white/10 flex items-center gap-2.5 shadow-inner">
-            <div className="text-[11px] font-medium text-gray-400">
-              Role:{' '}
-              <span
-                className={`font-bold uppercase ${
-                  isAdmin ? 'text-amber-glow' : 'text-blue-400'
-                }`}
-              >
-                {isAdmin ? 'Admin 👑' : 'Trader (User)'}
-              </span>
+          {isAdmin && (
+            <div className="p-1.5 px-3 rounded-xl bg-amber-glow/10 border border-amber-glow/30 flex items-center gap-2">
+              <span className="text-[11px] font-bold text-amber-glow">👑 Admin Moderation Mode</span>
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={toggleRole}
-              className="h-7 text-[11px] border-ember-500/40 text-ember-400 hover:bg-ember-500/10 font-bold"
-            >
-              Switch to {isAdmin ? 'User Mode' : 'Admin Mode'}
-            </Button>
-          </div>
+          )}
 
           <Button
             onClick={() => setAskModalOpen(true)}

@@ -69,6 +69,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const stored = localStorage.getItem('eagle_demo_user')
       if (stored) {
         const parsed = JSON.parse(stored)
+        // Ensure accurate role: normal user emails should NEVER be admin
+        if (parsed.email && !parsed.email.toLowerCase().includes('admin') && parsed.role === 'admin') {
+          parsed.role = 'user'
+          localStorage.setItem('eagle_demo_user', JSON.stringify(parsed))
+          document.cookie = `eagle_role=user; path=/; max-age=2592000; SameSite=Lax`
+        }
         // Ensure phone & verification status exist
         parsed.phone_number = parsed.phone_number || '+1 (555) 382-9014'
         parsed.verification_status = parsed.verification_status || 'Verified'
@@ -191,7 +197,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {}
 
     const found = usersList.find((u: any) => u.email?.toLowerCase() === userData.email?.toLowerCase())
-    const role = userData.role || found?.role || (userData.email.toLowerCase().includes('admin') ? 'admin' : 'user')
+    const isAdminEmail = userData.email.toLowerCase().includes('admin')
+    const role: 'admin' | 'user' = isAdminEmail ? 'admin' : 'user'
     const fullName = userData.name || userData.full_name || found?.full_name || found?.name || userData.email.split('@')[0]
 
     const fullUser: UserProfile = {

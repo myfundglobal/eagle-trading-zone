@@ -95,7 +95,7 @@ export function SignupForm() {
       setLoading(false)
       if (typeof window !== 'undefined') {
         window.location.href = form.email.toLowerCase().includes('admin')
-          ? '/dashboard/community'
+          ? '/admin'
           : '/dashboard'
       }
     }, 400)

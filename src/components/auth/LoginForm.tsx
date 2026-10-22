@@ -39,7 +39,7 @@ export function LoginForm() {
           toast.success('Welcome back!')
           if (typeof window !== 'undefined') {
             window.location.href = email.toLowerCase().includes('admin')
-              ? '/dashboard/community'
+              ? '/admin'
               : '/dashboard'
           }
           return
@@ -57,7 +57,7 @@ export function LoginForm() {
       })
       if (typeof window !== 'undefined') {
         window.location.href = email.toLowerCase().includes('admin')
-          ? '/dashboard/community'
+          ? '/admin'
           : '/dashboard'
       }
       return

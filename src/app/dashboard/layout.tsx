@@ -27,7 +27,6 @@ import {
   Lock,
   ShoppingBag,
   Calculator,
-  UserCheck,
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useAuth } from '@/lib/auth-context'
@@ -60,7 +59,7 @@ const navItems: NavItem[] = [
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const { theme, setTheme } = useTheme()
-  const { user, logout, isLocked, isAdmin, toggleRole } = useAuth()
+  const { user, logout, isLocked, isAdmin } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const planBadgeColor = {
@@ -214,20 +213,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Role Switcher Pill for Testing */}
-            <button
-              onClick={toggleRole}
-              title="Click to switch between Trader and Admin mode"
-              className={cn(
-                'hidden md:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all border',
-                isAdmin
-                  ? 'bg-amber-glow/15 border-amber-glow/40 text-amber-glow hover:bg-amber-glow/25'
-                  : 'bg-void-900 border-white/10 text-gray-300 hover:border-ember-500/40'
-              )}
-            >
-              <UserCheck className="w-3.5 h-3.5 text-ember-400" />
-              <span>Role: <strong className="uppercase">{isAdmin ? 'Admin 👑' : 'Trader'}</strong></span>
-            </button>
+            {/* Admin Portal Pill (Only visible to verified Administrators) */}
+            {isAdmin && (
+              <Link
+                href="/admin"
+                className="hidden md:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all border bg-amber-glow/15 border-amber-glow/40 text-amber-glow hover:bg-amber-glow/25"
+                title="Open Administrator Portal"
+              >
+                <span>👑 Admin Portal</span>
+              </Link>
+            )}
 
             {/* Verification Status Badge */}
             <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
