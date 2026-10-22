@@ -213,6 +213,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(fullUser)
     if (typeof window !== 'undefined') {
       localStorage.setItem('eagle_demo_user', JSON.stringify(fullUser))
+      document.cookie = `eagle_session=true; path=/; max-age=2592000; SameSite=Lax`
+      document.cookie = `eagle_role=${role}; path=/; max-age=2592000; SameSite=Lax`
       const idx = usersList.findIndex((u: any) => u.email?.toLowerCase() === fullUser.email.toLowerCase())
       if (idx >= 0) {
         usersList[idx] = { ...usersList[idx], ...fullUser }
@@ -226,10 +228,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       toast.success(`Welcome back, ${fullName}!`)
     }
 
-    if (role === 'admin') {
-      router.push('/dashboard/community')
-    } else {
-      router.push('/dashboard')
+    if (typeof window !== 'undefined') {
+      window.location.href = role === 'admin' ? '/admin' : '/dashboard'
     }
   }
 
@@ -250,12 +250,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(demoUser)
     if (typeof window !== 'undefined') {
       localStorage.setItem('eagle_demo_user', JSON.stringify(demoUser))
+      document.cookie = `eagle_session=true; path=/; max-age=2592000; SameSite=Lax`
+      document.cookie = `eagle_role=${role}; path=/; max-age=2592000; SameSite=Lax`
     }
     toast.success(role === 'admin' ? 'Signed in as Eagle Admin 👑' : 'Signed in successfully')
-    if (role === 'admin') {
-      router.push('/dashboard/community')
-    } else {
-      router.push('/dashboard')
+    if (typeof window !== 'undefined') {
+      window.location.href = role === 'admin' ? '/admin' : '/dashboard'
     }
   }
 
@@ -267,9 +267,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null)
     if (typeof window !== 'undefined') {
       localStorage.removeItem('eagle_demo_user')
+      document.cookie = 'eagle_session=; path=/; max-age=0; SameSite=Lax'
+      document.cookie = 'eagle_role=; path=/; max-age=0; SameSite=Lax'
     }
     toast.success('Signed out successfully')
-    router.push('/login')
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login'
+    }
   }
 
   const updatePlan = (newPlan: 'free' | 'pro' | 'elite', period: 'monthly' | 'yearly' = 'monthly') => {
@@ -335,6 +339,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(updated)
     if (typeof window !== 'undefined') {
       localStorage.setItem('eagle_demo_user', JSON.stringify(updated))
+      document.cookie = `eagle_role=${newRole}; path=/; max-age=2592000; SameSite=Lax`
     }
     toast.success(`Switched role to: ${newRole.toUpperCase()} mode!`)
   }
